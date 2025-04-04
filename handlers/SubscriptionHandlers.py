@@ -1,0 +1,115 @@
+from aiogram import F, types
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+
+from config import user_subscriptions
+from keyboards import get_subscriptions_kb, get_back_kb
+
+
+class SubscriptionStates(StatesGroup):
+    WAITING_NAME = State()
+    WAITING_PRICE = State()
+    WAITING_DELETE_NUMBER = State()
+
+
+async def show_subscriptions(message: types.Message):
+    user_id = message.from_user.id
+    # получить подписки из БД
+    subscriptions = [{"name": "Подписка 1", "price": "100"}, {"name": "Подписка 2", "price": "200"}]
+
+    text = "Ваши подписки:\n" + "\n".join(
+        f"{i + 1}. {sub['name']} - {sub['price']} руб."
+        for i, sub in enumerate(subscriptions)
+    ) if subscriptions else "У вас пока нет подписок."
+
+    await message.answer(text, reply_markup=get_subscriptions_kb())
+
+
+async def subscriptions_handler(message: types.Message):
+    await show_subscriptions(message)
+
+
+async def add_subscription_start(message: types.Message, state: FSMContext):
+    await message.answer("Введите название подписки:", reply_markup=get_back_kb())
+    await state.set_state(SubscriptionStates.WAITING_NAME)
+
+
+async def add_subscription_name(message: types.Message, state: FSMContext):
+    if message.text == "назад":
+        await message.answer("Отмена добавления", reply_markup=get_subscriptions_kb())
+        await state.clear()
+        return
+
+    await state.update_data(name=message.text)
+    await message.answer("Введите стоимость подписки в рублях:", reply_markup=get_back_kb())
+    await state.set_state(SubscriptionStates.WAITING_PRICE)
+
+
+async def add_subscription_price(message: types.Message, state: FSMContext):
+    if message.text == "назад":
+        await message.answer("Введите название подписки:", reply_markup=get_back_kb())
+        await state.set_state(SubscriptionStates.WAITING_NAME)
+        return
+
+    if not message.text.isdigit():
+        await message.answer("Пожалуйста, введите число!")
+        return
+
+    data = await state.get_data()
+    user_id = message.from_user.id
+
+    user_subscriptions.setdefault(user_id, []).append({
+        "name": data["name"],
+        "price": int(message.text)
+    })
+
+    await message.answer(
+        f"Подписка '{data['name']}' за {message.text} руб. добавлена!",
+        reply_markup=get_subscriptions_kb()
+    )
+    await state.clear()
+
+
+async def delete_subscription_start(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    if not user_subscriptions.get(user_id):
+        await message.answer("У вас нет подписок для удаления.")
+        return
+
+    await show_subscriptions(message)
+    await message.answer("Введите номер подписки для удаления:", reply_markup=get_back_kb())
+    await state.set_state(SubscriptionStates.WAITING_DELETE_NUMBER)
+
+
+async def delete_subscription_number(message: types.Message, state: FSMContext):
+    if message.text == "назад":
+        await show_subscriptions(message)
+        await state.clear()
+        return
+
+    if not message.text.isdigit():
+        await message.answer("Пожалуйста, введите номер!")
+        return
+
+    user_id = message.from_user.id
+    num = int(message.text) - 1
+
+    if 0 <= num < len(user_subscriptions.get(user_id, [])):
+        deleted = user_subscriptions[user_id].pop(num)
+        await message.answer(
+            f"Подписка '{deleted['name']}' удалена!",
+            reply_markup=get_subscriptions_kb()
+        )
+    else:
+        await message.answer("Неверный номер подписки!")
+
+    await state.clear()
+
+
+def register_subscription_handlers(dp):
+    dp.message.register(subscriptions_handler, F.text == "подписки")
+    dp.message.register(add_subscription_start, F.text == "добавить")
+    dp.message.register(delete_subscription_start, F.text == "удалить")
+    dp.message.register(add_subscription_name, SubscriptionStates.WAITING_NAME)
+    dp.message.register(add_subscription_price, SubscriptionStates.WAITING_PRICE)
+    dp.message.register(delete_subscription_number, SubscriptionStates.WAITING_DELETE_NUMBER)
