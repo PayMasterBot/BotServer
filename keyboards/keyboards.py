@@ -11,7 +11,7 @@ def build_keyboard(buttons: list[str], sizes: tuple[int] = (2,)):
 
 
 def get_main_kb():
-    return build_keyboard(["траты", "активы"])
+    return build_keyboard(["траты", "активы"], (1, 1))
 
 
 def get_expenses_kb():
