@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from handlers import BaseHandlers, SubscriptionHandlers
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
@@ -16,7 +17,13 @@ bot = Bot(
 dp = Dispatcher()
 
 
+def register_handlers(dp):
+    BaseHandlers.register_base_handlers(dp)
+    SubscriptionHandlers.register_subscription_handlers(dp)
+
+
 async def main():
+    register_handlers(dp)
     await dp.start_polling(bot)
 
 
