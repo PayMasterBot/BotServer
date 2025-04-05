@@ -5,18 +5,19 @@ from keyboards import keyboards
 
 
 class SubscriptionStates(StatesGroup):
-    WAITING_NAME = State()
-    WAITING_PRICE = State()
-    WAITING_DELETE_NUMBER = State()
+    IN_SUBSCRIPTIONS = State()
+    WAITING_SUBSCR_NAME = State()
+    WAITING_SUBSCR_PRICE = State()
+    WAITING_SUBSCR_DELETE_NUMBER = State()
 
 
 def register_subscription_handlers(dp):
     dp.message.register(subscriptions_handler, F.text == "подписки")
-    dp.message.register(add_subscription_start, F.text == "добавить")
-    dp.message.register(delete_subscription_start, F.text == "удалить")
-    dp.message.register(add_subscription_name, SubscriptionStates.WAITING_NAME)
-    dp.message.register(add_subscription_price, SubscriptionStates.WAITING_PRICE)
-    dp.message.register(delete_subscription_number, SubscriptionStates.WAITING_DELETE_NUMBER)
+    dp.message.register(add_subscription_start, F.text == "добавить", SubscriptionStates.IN_SUBSCRIPTIONS)
+    dp.message.register(delete_subscription_start, F.text == "удалить", SubscriptionStates.IN_SUBSCRIPTIONS)
+    dp.message.register(add_subscription_name, SubscriptionStates.WAITING_SUBSCR_NAME)
+    dp.message.register(add_subscription_price, SubscriptionStates.WAITING_SUBSCR_PRICE)
+    dp.message.register(delete_subscription_number, SubscriptionStates.WAITING_SUBSCR_DELETE_NUMBER)
 
 
 async def show_subscriptions(message: types.Message):
@@ -32,13 +33,14 @@ async def show_subscriptions(message: types.Message):
     await message.answer(text, reply_markup=keyboards.get_subscriptions_kb())
 
 
-async def subscriptions_handler(message: types.Message):
+async def subscriptions_handler(message: types.Message, state: FSMContext):
+    await state.set_state(SubscriptionStates.IN_SUBSCRIPTIONS)
     await show_subscriptions(message)
 
 
 async def add_subscription_start(message: types.Message, state: FSMContext):
     await message.answer("Введите название подписки:", reply_markup=keyboards.get_back_kb())
-    await state.set_state(SubscriptionStates.WAITING_NAME)
+    await state.set_state(SubscriptionStates.WAITING_SUBSCR_NAME)
 
 
 async def add_subscription_name(message: types.Message, state: FSMContext):
@@ -49,13 +51,13 @@ async def add_subscription_name(message: types.Message, state: FSMContext):
 
     await state.update_data(name=message.text)
     await message.answer("Введите стоимость подписки в рублях:", reply_markup=keyboards.get_back_kb())
-    await state.set_state(SubscriptionStates.WAITING_PRICE)
+    await state.set_state(SubscriptionStates.WAITING_SUBSCR_PRICE)
 
 
 async def add_subscription_price(message: types.Message, state: FSMContext):
     if message.text == "назад":
         await message.answer("Введите название подписки:", reply_markup=keyboards.get_back_kb())
-        await state.set_state(SubscriptionStates.WAITING_NAME)
+        await state.clear()
         return
 
     if not message.text.isdigit():
@@ -80,7 +82,7 @@ async def delete_subscription_start(message: types.Message, state: FSMContext):
 
     await show_subscriptions(message)
     await message.answer("Введите номер подписки для удаления:", reply_markup=keyboards.get_back_kb())
-    await state.set_state(SubscriptionStates.WAITING_DELETE_NUMBER)
+    await state.set_state(SubscriptionStates.WAITING_SUBSCR_DELETE_NUMBER)
 
 
 async def delete_subscription_number(message: types.Message, state: FSMContext):
