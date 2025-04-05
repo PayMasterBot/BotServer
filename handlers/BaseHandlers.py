@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
-from handlers import SubscriptionHandlers, CategoryHandlers
+from handlers import SubscriptionHandlers, CategoryHandlers, SpendingsHandlers
 
 
 class BaseStates(StatesGroup):
@@ -39,6 +39,11 @@ async def back_handler(message: types.Message, state: FSMContext):
         await state.set_state(CategoryHandlers.CategoryStates.IN_CATEGORY)
         await CategoryHandlers.show_category(message)
 
+    elif current_state == SpendingsHandlers.SpendingsStates.WAITING_SPENDING_CATEGORY.state or \
+            current_state == SpendingsHandlers.SpendingsStates.WAITING_SPENDING_COST.state:
+        await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
+        await state.set_state(BaseStates.IN_EXPENSES)
+
     elif message.text == "подписки":
         await SubscriptionHandlers.show_subscriptions(message)
 
@@ -47,7 +52,8 @@ async def back_handler(message: types.Message, state: FSMContext):
         await state.set_state(BaseStates.IN_MAIN)
 
     elif current_state == SubscriptionHandlers.SubscriptionStates.IN_SUBSCRIPTIONS or \
-            current_state == CategoryHandlers.CategoryStates.IN_CATEGORY:
+            current_state == CategoryHandlers.CategoryStates.IN_CATEGORY or \
+            current_state == SpendingsHandlers.SpendingsStates.SPENDINGS_ANALYTICS:
         await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
         await state.set_state(BaseStates.IN_EXPENSES)
 
