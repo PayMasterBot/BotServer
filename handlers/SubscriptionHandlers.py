@@ -73,7 +73,7 @@ async def add_subscription_price(message: types.Message, state: FSMContext):
         f"Подписка '{data['name']}' за {message.text} руб. добавлена!",
         reply_markup=keyboards.get_subscriptions_kb()
     )
-    await state.clear()
+    await state.set_state(SubscriptionStates.IN_SUBSCRIPTIONS)
 
 
 async def delete_subscription_start(message: types.Message, state: FSMContext):
@@ -101,4 +101,4 @@ async def delete_subscription_number(message: types.Message, state: FSMContext):
     # удаление подписки
     await message.answer("Подписка удалена", reply_markup=keyboards.get_subscriptions_kb())
 
-    await state.clear()
+    await state.set_state(SubscriptionStates.IN_SUBSCRIPTIONS)

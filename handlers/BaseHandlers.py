@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
-from handlers import SubscriptionHandlers
+from handlers import SubscriptionHandlers, CategoryHandlers
 
 
 class BaseStates(StatesGroup):
@@ -34,6 +34,11 @@ async def back_handler(message: types.Message, state: FSMContext):
         await state.set_state(SubscriptionHandlers.SubscriptionStates.IN_SUBSCRIPTIONS)
         await SubscriptionHandlers.show_subscriptions(message)
 
+    elif current_state == CategoryHandlers.CategoryStates.WAITING_CATEGORY_NAME.state or \
+            current_state == CategoryHandlers.CategoryStates.WAITING_CATEGORY_DELETE_NUMBER.state:
+        await state.set_state(CategoryHandlers.CategoryStates.IN_CATEGORY)
+        await CategoryHandlers.show_category(message)
+
     elif message.text == "подписки":
         await SubscriptionHandlers.show_subscriptions(message)
 
@@ -41,7 +46,8 @@ async def back_handler(message: types.Message, state: FSMContext):
         await message.answer("Главное меню", reply_markup=keyboards.get_main_kb())
         await state.set_state(BaseStates.IN_MAIN)
 
-    else:
+    elif current_state == SubscriptionHandlers.SubscriptionStates.IN_SUBSCRIPTIONS or \
+            current_state == CategoryHandlers.CategoryStates.IN_CATEGORY:
         await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
         await state.set_state(BaseStates.IN_EXPENSES)
 
