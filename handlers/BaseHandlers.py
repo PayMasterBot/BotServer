@@ -25,11 +25,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 async def back_handler(message: types.Message, state: FSMContext):
     current_state = await state.get_state()
-    await state.clear()
+    print(current_state)
+    # await state.clear()
 
-    if current_state == SubscriptionHandlers.SubscriptionStates.WAITING_NAME.state or \
-            current_state == SubscriptionHandlers.SubscriptionStates.WAITING_PRICE.state or \
-            current_state == SubscriptionHandlers.SubscriptionStates.WAITING_DELETE_NUMBER.state:
+    if current_state == SubscriptionHandlers.SubscriptionStates.WAITING_SUBSCR_NAME.state or \
+            current_state == SubscriptionHandlers.SubscriptionStates.WAITING_SUBSCR_PRICE.state or \
+            current_state == SubscriptionHandlers.SubscriptionStates.WAITING_SUBSCR_DELETE_NUMBER.state:
+        await state.set_state(SubscriptionHandlers.SubscriptionStates.IN_SUBSCRIPTIONS)
         await SubscriptionHandlers.show_subscriptions(message)
 
     elif message.text == "подписки":
