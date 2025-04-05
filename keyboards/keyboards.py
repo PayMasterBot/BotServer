@@ -22,5 +22,9 @@ def get_subscriptions_kb():
     return build_keyboard(["добавить", "удалить", "назад"], (2, 1))
 
 
+def get_category_kb():
+    return build_keyboard(["добавить", "удалить", "назад"], (2, 1))
+
+
 def get_back_kb():
     return build_keyboard(["назад"])
