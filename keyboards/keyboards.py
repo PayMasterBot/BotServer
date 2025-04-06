@@ -30,5 +30,9 @@ def get_spendings_analytics_kb():
     return build_keyboard(["сравнить", "за месяц", "назад"], (1, 1, 1))
 
 
+def get_assets_kb():
+    return build_keyboard(["валюты", "крипто", "отчет", "назад"], (1, 1, 1, 1))
+
+
 def get_back_kb():
     return build_keyboard(["назад"])
