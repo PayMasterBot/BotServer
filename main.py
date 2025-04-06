@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from handlers import BaseHandlers, SubscriptionHandlers, CategoryHandlers, SpendingsHandlers
+from handlers import BaseHandlers, SubscriptionHandlers, CategoryHandlers, SpendingsHandlers, CurrencyHandlers
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
@@ -22,6 +22,7 @@ def register_handlers(dp):
     SubscriptionHandlers.register_subscription_handlers(dp)
     CategoryHandlers.register_category_handlers(dp)
     SpendingsHandlers.register_spendings_handlers(dp)
+    CurrencyHandlers.register_currency_handlers(dp)
 
 
 async def main():

@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
-from handlers import SubscriptionHandlers, CategoryHandlers, SpendingsHandlers
+from handlers import SubscriptionHandlers, CategoryHandlers, SpendingsHandlers, CurrencyHandlers
 
 
 class BaseStates(StatesGroup):
@@ -16,6 +16,7 @@ def register_base_handlers(dp):
     dp.message.register(cmd_start, Command("start"))
     dp.message.register(back_handler, F.text == "назад")
     dp.message.register(expenses_handler, F.text == "траты")
+    dp.message.register(assets_handler, F.text == "активы")
 
 
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -44,6 +45,15 @@ async def back_handler(message: types.Message, state: FSMContext):
         await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
         await state.set_state(BaseStates.IN_EXPENSES)
 
+    elif current_state == CurrencyHandlers.CurrencyStates.WAITING_PARE_NAME or \
+            current_state == CurrencyHandlers.CurrencyStates.IN_TRACKED_PARES_LIST:
+        await message.answer("Валюты", reply_markup=keyboards.get_currency_kb())
+        await state.set_state(CurrencyHandlers.CurrencyStates.IN_CURRENCY)
+
+    elif current_state == CurrencyHandlers.CurrencyStates.WAITING_NEW_TRACKED_PARE_NAME or \
+            current_state == CurrencyHandlers.CurrencyStates.WAITING_TRACKED_PARE_DELETE_NUMBER:
+        await CurrencyHandlers.tracked_pares_handler(message, state)
+
     elif message.text == "подписки":
         await SubscriptionHandlers.show_subscriptions(message)
 
@@ -57,7 +67,16 @@ async def back_handler(message: types.Message, state: FSMContext):
         await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
         await state.set_state(BaseStates.IN_EXPENSES)
 
+    elif current_state == CurrencyHandlers.CurrencyStates.IN_CURRENCY:
+        await message.answer("Меню активов:", reply_markup=keyboards.get_assets_kb())
+        await state.set_state(BaseStates.IN_ASSETS)
+
 
 async def expenses_handler(message: types.Message, state: FSMContext):
-    await message.answer("Раздел трат:", reply_markup=keyboards.get_expenses_kb())
+    await message.answer("Меню трат:", reply_markup=keyboards.get_expenses_kb())
     await state.set_state(BaseStates.IN_EXPENSES)
+
+
+async def assets_handler(message: types.Message, state: FSMContext):
+    await message.answer("Меню активов:", reply_markup=keyboards.get_assets_kb())
+    await state.set_state(BaseStates.IN_ASSETS)
