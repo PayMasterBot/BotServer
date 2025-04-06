@@ -35,7 +35,11 @@ def get_assets_kb():
 
 
 def get_currency_kb():
-    return build_keyboard(["запросить пару", "отслеживаемое", "отчет", "назад"])
+    return build_keyboard(["запросить пару", "отслеживаемое", "отчет", "назад"], (1, 1, 1, 1))
+
+
+def get_crypto_kb():
+    return build_keyboard(["баланс", "запросить пару", "отслеживаемое", "отчет", "назад"], (1, 1, 1, 1, 1))
 
 
 def get_back_kb():
