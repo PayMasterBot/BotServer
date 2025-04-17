@@ -9,6 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+BASE_URL = os.getenv("BASE_URL")
 
 bot = Bot(
     token=BOT_TOKEN,
@@ -21,7 +22,7 @@ dp = Dispatcher()
 def register_handlers(dp):
     BaseHandlers.register_base_handlers(dp)
     SubscriptionHandlers.register_subscription_handlers(dp)
-    CategoryHandlers.register_category_handlers(dp)
+    CategoryHandlers.register_category_handlers(dp, BASE_URL)
     SpendingsHandlers.register_spendings_handlers(dp)
     CurrencyHandlers.register_currency_handlers(dp)
     BinanceHandlers.register_binance_handlers(dp)
