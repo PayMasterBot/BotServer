@@ -1,8 +1,11 @@
 from aiogram import F, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+import requests
+import json
 from keyboards import keyboards
 
+base_url=""
 
 class CategoryStates(StatesGroup):
     IN_CATEGORY = State()
@@ -10,23 +13,36 @@ class CategoryStates(StatesGroup):
     WAITING_CATEGORY_DELETE_NUMBER = State()
 
 
-def register_category_handlers(dp):
+def register_category_handlers(dp, new_base_url):
+    global base_url
     dp.message.register(category_handler, F.text == "категории")
     dp.message.register(add_category_start, F.text == "добавить", CategoryStates.IN_CATEGORY)
     dp.message.register(delete_category_start, F.text == "удалить", CategoryStates.IN_CATEGORY)
     dp.message.register(add_category_name, CategoryStates.WAITING_CATEGORY_NAME)
     dp.message.register(delete_category_number, CategoryStates.WAITING_CATEGORY_DELETE_NUMBER)
+    base_url = new_base_url
 
 
 async def show_category(message: types.Message):
-    # user_id = message.from_user.id
-    # получить категории из БД
-    category = ["Категория 1", "Категория 2", "Категория 3"]
+    user_id = message.from_user.id
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id  # Замените на реальный ID пользователя
+    }
+    response = requests.get(request_url, params=params)
 
-    text = "Ваши категории:\n" + "\n".join(
-        f"{i + 1}. {category[i]}"
-        for i in range(0, len(category))
-    ) if category else "У вас пока нет категорий."
+    text = ""
+
+    if response.status_code == 200:
+        data = response.json()
+        titles = [category["title"] for category in data]
+        text = "Ваши категории:\n" + "\n".join(
+            f"{i + 1}. {titles[i]}"
+            for i in range(0, len(titles))
+        ) if titles else "У вас пока нет категорий."
+    else:
+        text = "Произошла ошибка, попробуйте позже"
+
     await message.answer(text, reply_markup=keyboards.get_category_kb())
 
 
