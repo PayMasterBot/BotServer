@@ -100,7 +100,27 @@ async def add_category_name(message: types.Message, state: FSMContext):
 
 async def delete_category_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    # проверка на наличие категорий
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    titles = [category["title"] for category in data]
+                    if len(titles) == 0:
+                        await message.answer("У вас нет категорий")
+                        return
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
+
 
     await show_category(message)
     await message.answer("Введите номер категории для удаления:", reply_markup=keyboards.get_back_kb())
@@ -118,9 +138,45 @@ async def delete_category_number(message: types.Message, state: FSMContext):
         return
 
     user_id = message.from_user.id
-    num = int(message.text) - 1
+    category_index = int(message.text) - 1
 
-    # удаление категории
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
+    ids = [category["id"] for category in data]
+    if 0 <= category_index < len(ids):
+        request_url = base_url + "category/" + str(ids[category_index])
+        params = {
+            "userId": user_id
+        }
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.delete(request_url, params=params) as response:
+                    if response.status == 200:
+                        pass
+                    else:
+                        await message.answer("Произошла ошибка, попробуйте позже")
+                        return
+            except Exception as e:
+                await message.answer("Произошла ошибка подключения, попробуйте позже")
+                return
+    else:
+        await message.answer("Введите корректный номер для удаления")
+        return
+
     await message.answer("Категория удалена", reply_markup=keyboards.get_category_kb())
 
     await state.set_state(CategoryStates.IN_CATEGORY)
