@@ -66,13 +66,33 @@ async def add_category_name(message: types.Message, state: FSMContext):
         await state.clear()
         return
 
-    data = await state.get_data()
+    category_title = message.text
     user_id = message.from_user.id
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id
+    }
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "id": 0,
+        "title": category_title
+    }
 
-    # добавить категорию
+    text = ""
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(request_url, params=params, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    text = "Категория была добавлена!"
+                else:
+                    text = "Произошла ошибка добавления, попробуйте позже"
+        except Exception as e:
+            print(str(e))
+            text = "Произошла ошибка подключения, попробуйте позже"
 
     await message.answer(
-        f"Категория добавлена!",
+        text,
         reply_markup=keyboards.get_category_kb()
     )
     await state.set_state(CategoryStates.IN_CATEGORY)
