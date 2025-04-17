@@ -2,6 +2,7 @@ from aiogram import F, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import requests
+import aiohttp
 import json
 from keyboards import keyboards
 
@@ -29,19 +30,22 @@ async def show_category(message: types.Message):
     params = {
         "userId": user_id  # Замените на реальный ID пользователя
     }
-    response = requests.get(request_url, params=params)
 
     text = ""
-
-    if response.status_code == 200:
-        data = response.json()
-        titles = [category["title"] for category in data]
-        text = "Ваши категории:\n" + "\n".join(
-            f"{i + 1}. {titles[i]}"
-            for i in range(0, len(titles))
-        ) if titles else "У вас пока нет категорий."
-    else:
-        text = "Произошла ошибка, попробуйте позже"
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, params=params) as response:
+                if response.status_code == 200:
+                    data = response.json()
+                    titles = [category["title"] for category in data]
+                    text = "Ваши категории:\n" + "\n".join(
+                        f"{i + 1}. {titles[i]}"
+                        for i in range(0, len(titles))
+                    ) if titles else "У вас пока нет категорий."
+                else:
+                    text = "Произошла ошибка, попробуйте позже"
+        except Exception as e:
+            text = "Произошла ошибка подключения, попробуйте позже"
 
     await message.answer(text, reply_markup=keyboards.get_category_kb())
 
