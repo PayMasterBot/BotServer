@@ -34,9 +34,9 @@ async def show_category(message: types.Message):
     text = ""
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(url, params=params) as response:
-                if response.status_code == 200:
-                    data = response.json()
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
                     titles = [category["title"] for category in data]
                     text = "Ваши категории:\n" + "\n".join(
                         f"{i + 1}. {titles[i]}"
