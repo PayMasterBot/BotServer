@@ -3,7 +3,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
 from handlers import BaseHandlers
+import aiohttp
+import json
 
+base_url=""
 
 class SpendingsStates(StatesGroup):
     SPENDINGS_ANALYTICS = State()
@@ -11,13 +14,15 @@ class SpendingsStates(StatesGroup):
     WAITING_SPENDING_COST = State()
 
 
-def register_spendings_handlers(dp):
+def register_spendings_handlers(dp, new_base_url):
+    global base_url
     dp.message.register(new_spending_start, F.text == "новая трата")
     dp.message.register(new_spending_category, SpendingsStates.WAITING_SPENDING_CATEGORY)
     dp.message.register(new_spending_cost, SpendingsStates.WAITING_SPENDING_COST)
     dp.message.register(analysis_start, F.text == "анализ")
     dp.message.register(compare_analysis, F.text == "сравнить", SpendingsStates.SPENDINGS_ANALYTICS)
     dp.message.register(monthly_analysis, F.text == "за месяц", SpendingsStates.SPENDINGS_ANALYTICS)
+    base_url = new_base_url
 
 
 async def new_spending_start(message: types.Message, state: FSMContext):
@@ -74,12 +79,44 @@ async def analysis_start(message: types.Message, state: FSMContext):
 
 
 async def compare_analysis(message: types.Message, state: FSMContext):
-    # формирование отчета
+    user_id = message.from_user.id
+    request_url = base_url + "category/report"
+    params = {
+        "userId": user_id
+    }
 
-    await message.answer("Вот ваш сравнительный отчет:", reply_markup=keyboards.get_spendings_analytics_kb())
+    text = "Вот ваш сравнительный отчет "
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    text += str(data)
+                else:
+                    text = "Произошла ошибка, попробуйте позже"
+        except Exception as e:
+            text = "Произошла ошибка создания отчета, попробуйте позже"
+
+    await message.answer(text, reply_markup=keyboards.get_spendings_analytics_kb())
 
 
 async def monthly_analysis(message: types.Message, state: FSMContext):
-    # формирование отчета
+    user_id = message.from_user.id
+    request_url = base_url + "category/report"
+    params = {
+        "userId": user_id
+    }
 
-    await message.answer("Вот ваш отчет за месяц:", reply_markup=keyboards.get_spendings_analytics_kb())
+    text = "Вот ваш отчет за месяц "
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    text += str(data)
+                else:
+                    text = "Произошла ошибка, попробуйте позже"
+        except Exception as e:
+            text = "Произошла ошибка создания отчета, попробуйте позже"
+
+    await message.answer(text, reply_markup=keyboards.get_spendings_analytics_kb())
