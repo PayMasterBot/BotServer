@@ -23,7 +23,7 @@ def register_handlers(dp):
     BaseHandlers.register_base_handlers(dp)
     SubscriptionHandlers.register_subscription_handlers(dp)
     CategoryHandlers.register_category_handlers(dp, BASE_URL)
-    SpendingsHandlers.register_spendings_handlers(dp)
+    SpendingsHandlers.register_spendings_handlers(dp, BASE_URL)
     CurrencyHandlers.register_currency_handlers(dp)
     BinanceHandlers.register_binance_handlers(dp)
     AssetsReportHandlers.register_assets_report_handlers(dp)
