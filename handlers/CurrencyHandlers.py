@@ -125,8 +125,7 @@ async def add_new_tracked_pare_name(message: types.Message, state: FSMContext):
                     pass
                 else:
                     text = "Проверьте название пары"
-                    await message.answer(text, reply_markup=keyboards.get_tracked_pares_kb())
-                    await state.set_state(CurrencyStates.IN_TRACKED_PARES_LIST)
+                    await message.answer(text, reply_markup=keyboards.get_back_kb())
                     return
         except Exception as e:
             text = "Произошла ошибка подключения, попробуйте позже"
