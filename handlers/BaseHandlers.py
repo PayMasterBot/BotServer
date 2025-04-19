@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
-from handlers import SubscriptionHandlers, CategoryHandlers, SpendingsHandlers, CurrencyHandlers, BinanceHandlers
+from handlers import SubscriptionHandlers, CategoryHandlers, SpendingsHandlers, CurrencyHandlers
 
 
 class BaseStates(StatesGroup):
@@ -54,15 +54,6 @@ async def back_handler(message: types.Message, state: FSMContext):
             current_state == CurrencyHandlers.CurrencyStates.WAITING_TRACKED_PARE_DELETE_NUMBER:
         await CurrencyHandlers.tracked_pares_handler(message, state)
 
-    elif current_state == BinanceHandlers.BinanceStates.WAITING_NEW_TRACKED_CRYPTO_PARE_NAME or \
-            current_state == BinanceHandlers.BinanceStates.WAITING_TRACKED_CRYPTO_PARE_DELETE_NUMBER:
-        await BinanceHandlers.tracked_crypto_pares_handler(message, state)
-
-    elif current_state == BinanceHandlers.BinanceStates.WAITING_CRYPTO_PARE_NAME or \
-            current_state == BinanceHandlers.BinanceStates.IN_TRACKED_CRYPTO_PARES_LIST:
-        await message.answer("Крипто", reply_markup=keyboards.get_crypto_kb())
-        await state.set_state(BinanceHandlers.BinanceStates.IN_BINANCE)
-
     elif message.text == "подписки":
         await SubscriptionHandlers.show_subscriptions(message)
 
@@ -76,8 +67,7 @@ async def back_handler(message: types.Message, state: FSMContext):
         await message.answer("Меню трат", reply_markup=keyboards.get_expenses_kb())
         await state.set_state(BaseStates.IN_EXPENSES)
 
-    elif current_state == CurrencyHandlers.CurrencyStates.IN_CURRENCY or \
-            current_state == BinanceHandlers.BinanceStates.IN_BINANCE:
+    elif current_state == CurrencyHandlers.CurrencyStates.IN_CURRENCY:
         await message.answer("Меню активов:", reply_markup=keyboards.get_assets_kb())
         await state.set_state(BaseStates.IN_ASSETS)
 

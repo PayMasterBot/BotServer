@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 from handlers import BaseHandlers, SubscriptionHandlers, CategoryHandlers, SpendingsHandlers, CurrencyHandlers, \
-    BinanceHandlers, AssetsReportHandlers
+    AssetsReportHandlers
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
