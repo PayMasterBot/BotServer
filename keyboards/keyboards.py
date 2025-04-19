@@ -31,15 +31,11 @@ def get_spendings_analytics_kb():
 
 
 def get_assets_kb():
-    return build_keyboard(["валюты", "крипто", "отчет", "назад"], (1, 1, 1, 1))
+    return build_keyboard(["валюты", "отчет", "назад"], (1, 1, 1))
 
 
 def get_currency_kb():
-    return build_keyboard(["запросить пару", "отслеживаемое", "отчет", "назад"], (1, 1, 1, 1))
-
-
-def get_crypto_kb():
-    return build_keyboard(["баланс", "запросить пару", "отслеживаемое", "отчет", "назад"], (1, 1, 1, 1, 1))
+    return build_keyboard(["запросить пару", "отслеживаемое", "назад"], (1, 1, 1))
 
 
 def get_tracked_pares_kb():
