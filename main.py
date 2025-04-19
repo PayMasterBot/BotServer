@@ -21,7 +21,7 @@ dp = Dispatcher()
 
 def register_handlers(dp):
     BaseHandlers.register_base_handlers(dp)
-    SubscriptionHandlers.register_subscription_handlers(dp)
+    SubscriptionHandlers.register_subscription_handlers(dp, BASE_URL)
     CategoryHandlers.register_category_handlers(dp, BASE_URL)
     SpendingsHandlers.register_spendings_handlers(dp, BASE_URL)
     CurrencyHandlers.register_currency_handlers(dp, BASE_URL)

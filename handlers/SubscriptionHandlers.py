@@ -2,7 +2,10 @@ from aiogram import F, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
+import aiohttp
+import json
 
+base_url=""
 
 class SubscriptionStates(StatesGroup):
     IN_SUBSCRIPTIONS = State()
@@ -11,24 +14,39 @@ class SubscriptionStates(StatesGroup):
     WAITING_SUBSCR_DELETE_NUMBER = State()
 
 
-def register_subscription_handlers(dp):
+def register_subscription_handlers(dp, new_base_url):
+    global base_url
     dp.message.register(subscriptions_handler, F.text == "подписки")
     dp.message.register(add_subscription_start, F.text == "добавить", SubscriptionStates.IN_SUBSCRIPTIONS)
     dp.message.register(delete_subscription_start, F.text == "удалить", SubscriptionStates.IN_SUBSCRIPTIONS)
     dp.message.register(add_subscription_name, SubscriptionStates.WAITING_SUBSCR_NAME)
     dp.message.register(add_subscription_price, SubscriptionStates.WAITING_SUBSCR_PRICE)
     dp.message.register(delete_subscription_number, SubscriptionStates.WAITING_SUBSCR_DELETE_NUMBER)
+    base_url = new_base_url
 
 
 async def show_subscriptions(message: types.Message):
-    # user_id = message.from_user.id
-    # получить подписки из БД
-    subscriptions = [{"name": "Подписка 1", "price": "100"}, {"name": "Подписка 2", "price": "200"}]
+    user_id = message.from_user.id
+    request_url = base_url + "subscription"
+    params = {
+        "userId": user_id
+    }
 
-    text = "Ваши подписки:\n" + "\n".join(
-        f"{i + 1}. {sub['name']} - {sub['price']} руб."
-        for i, sub in enumerate(subscriptions)
-    ) if subscriptions else "У вас пока нет подписок."
+    text = ""
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    titles = [subscription["title"] for subscription in data]
+                    text = "Ваши подписки:\n" + "\n".join(
+                        f"{i + 1}. {titles[i]}"
+                        for i in range(0, len(titles))
+                    ) if titles else "У вас пока нет подписок."
+                else:
+                    text = "Произошла ошибка, попробуйте позже"
+        except Exception as e:
+            text = "Произошла ошибка подключения, попробуйте позже"
 
     await message.answer(text, reply_markup=keyboards.get_subscriptions_kb())
 
@@ -65,14 +83,37 @@ async def add_subscription_price(message: types.Message, state: FSMContext):
         return
 
     data = await state.get_data()
+
+    subscription_title = data['name']
+    price = message.text
     user_id = message.from_user.id
+    request_url = base_url + "subscription"
+    params = {
+        "userId": user_id
+    }
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "id": 0,
+        "userId": 0,
+        "title": subscription_title,
+        "price": int(price)
+    }
 
-    # добавить подписку
+    text = ""
 
-    await message.answer(
-        f"Подписка '{data['name']}' за {message.text} руб. добавлена!",
-        reply_markup=keyboards.get_subscriptions_kb()
-    )
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(request_url, params=params, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    text = "Подписка была добавлена!"
+                else:
+                    print(params, payload)
+                    text = "Произошла ошибка добавления, попробуйте позже"
+        except Exception as e:
+            print(str(e))
+            text = "Произошла ошибка подключения, попробуйте позже"
+
+    await message.answer(text, reply_markup=keyboards.get_subscriptions_kb())
     await state.set_state(SubscriptionStates.IN_SUBSCRIPTIONS)
 
 
