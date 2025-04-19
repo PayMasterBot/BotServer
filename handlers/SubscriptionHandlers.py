@@ -119,7 +119,25 @@ async def add_subscription_price(message: types.Message, state: FSMContext):
 
 async def delete_subscription_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    # проверка на наличие подписок
+    request_url = base_url + "subscription"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if len(data) == 0:
+                        await message.answer("У вас нет подписок")
+                        return
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
 
     await show_subscriptions(message)
     await message.answer("Введите номер подписки для удаления:", reply_markup=keyboards.get_back_kb())
@@ -137,9 +155,44 @@ async def delete_subscription_number(message: types.Message, state: FSMContext):
         return
 
     user_id = message.from_user.id
-    num = int(message.text) - 1
+    subscription_index = int(message.text) - 1
 
-    # удаление подписки
+    request_url = base_url + "subscription"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
+
+    if 0 <= subscription_index < len(data):
+        request_url = base_url + "subscription/" + str(data[subscription_index]["id"])
+        params = {
+            "userId": user_id
+        }
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.delete(request_url, params=params) as response:
+                    if response.status == 200:
+                        pass
+                    else:
+                        await message.answer("Произошла ошибка, попробуйте позже")
+                        return
+            except Exception as e:
+                await message.answer("Произошла ошибка подключения, попробуйте позже")
+                return
+    else:
+        await message.answer("Введите корректный номер для удаления")
+        return
+
     await message.answer("Подписка удалена", reply_markup=keyboards.get_subscriptions_kb())
-
     await state.set_state(SubscriptionStates.IN_SUBSCRIPTIONS)
