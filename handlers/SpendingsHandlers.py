@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import aiohttp
 import json
 
-base_url=""
+base_url = ""
+
 
 class SpendingsStates(StatesGroup):
     SPENDINGS_ANALYTICS = State()
@@ -30,7 +31,7 @@ async def new_spending_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     request_url = base_url + "category"
     params = {
-        "userId": user_id  # Замените на реальный ID пользователя
+        "userId": user_id
     }
 
     text = ""
@@ -152,7 +153,8 @@ async def compare_analysis(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     data = await response.json()
                     for title in data.keys():
-                        text += title + ": " + str(data[title]['prev_month']) + " рублей | " + str(data[title]['cur_month']) + " рублей" + "\n"
+                        text += title + ": " + str(data[title]['prev_month']) + " рублей | " + str(
+                            data[title]['cur_month']) + " рублей" + "\n"
                 else:
                     text = "Произошла ошибка, попробуйте позже"
         except Exception as e:
