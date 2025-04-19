@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from keyboards import keyboards
 from handlers import BaseHandlers
+from datetime import datetime, timezone
 import aiohttp
 import json
 
@@ -26,34 +27,36 @@ def register_spendings_handlers(dp, new_base_url):
 
 
 async def new_spending_start(message: types.Message, state: FSMContext):
-    # получить категории из БД
-    category = ["Категория 1", "Категория 2", "Категория 3"]
+    user_id = message.from_user.id
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id  # Замените на реальный ID пользователя
+    }
 
-    text = "Ваши категории:\n" + "\n".join(
-        f"{i + 1}. {category[i]}"
-        for i in range(0, len(category))
-    ) if category else "У вас пока нет категорий."
+    text = ""
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    titles = [category["title"] for category in data]
+                    text = "Ваши категории:\n" + "\n".join(
+                        f"{i + 1}. {titles[i]}"
+                        for i in range(0, len(titles))
+                    ) if titles else "У вас пока нет категорий."
+                    if titles:
+                        text += "\nВведите порядковый номер категории"
+                else:
+                    text = "Произошла ошибка, попробуйте позже"
+        except Exception as e:
+            text = "Произошла ошибка подключения, попробуйте позже"
+
     await message.answer(text, reply_markup=keyboards.get_back_kb())
-    await message.answer("Введите порядковый номер категории:", reply_markup=keyboards.get_back_kb())
     await state.set_state(SpendingsStates.WAITING_SPENDING_CATEGORY)
+    await state.update_data(custom_data=data)
 
 
 async def new_spending_category(message: types.Message, state: FSMContext):
-    if message.text == "назад":
-        await message.answer("Отмена новой траты", reply_markup=keyboards.get_expenses_kb())
-        await state.clear()
-        return
-
-    # добавить трату
-
-    await message.answer(
-        "Введите сумму траты",
-        reply_markup=keyboards.get_back_kb()
-    )
-    await state.set_state(SpendingsStates.WAITING_SPENDING_COST)
-
-
-async def new_spending_cost(message: types.Message, state: FSMContext):
     if message.text == "назад":
         await message.answer("Отмена новой траты", reply_markup=keyboards.get_expenses_kb())
         await state.clear()
@@ -63,12 +66,69 @@ async def new_spending_cost(message: types.Message, state: FSMContext):
         await message.answer("Пожалуйста, введите номер!")
         return
 
+    category_index = int(message.text) - 1
+    data = await state.get_data()
+    data = data['custom_data']
+    ids = [category["id"] for category in data]
+
+    if 0 <= category_index < len(ids):
+        await state.set_state(SpendingsStates.WAITING_SPENDING_COST)
+        await state.update_data(custom_data=[data, category_index])
+    else:
+        await message.answer("Введите корректный номер для категории")
+        return
+
+    await message.answer("Введите сумму траты", reply_markup=keyboards.get_back_kb())
+
+
+async def new_spending_cost(message: types.Message, state: FSMContext):
+    if message.text == "назад":
+        await message.answer("Отмена новой траты", reply_markup=keyboards.get_expenses_kb())
+        await state.clear()
+        return
+
+    if not message.text.isdigit():
+        await message.answer("Пожалуйста, введите число!")
+        return
+
     user_id = message.from_user.id
-    num = int(message.text) - 1
+    price = int(message.text)
+    data = await state.get_data()
+    category_id = data['custom_data'][1]
+    ids = [category["id"] for category in data['custom_data'][0]]
+    titles = [category["title"] for category in data['custom_data'][0]]
+    current_time = str(datetime.now(timezone.utc).isoformat(timespec='milliseconds'))
+    plus_pos = current_time.find('+')
+    current_time = current_time[0:plus_pos] + "Z"
 
-    # добавление траты
+    request_url = base_url + 'category/' + str(ids[category_id]) + '/spending'
+    params = {
+        "userId": user_id
+    }
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "userId": 0,
+        "catId": 0,
+        "date": current_time,
+        "price": price,
+        "title": titles[category_id]
+    }
 
-    await message.answer("Трата добавлена", reply_markup=keyboards.get_expenses_kb())
+    text = ""
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(request_url, params=params, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    text = "Трата была добавлена!"
+                else:
+                    print(response.status, request_url, payload)
+                    text = "Произошла ошибка добавления, попробуйте позже"
+        except Exception as e:
+            print(str(e))
+            text = "Произошла ошибка подключения, попробуйте позже"
+
+    await message.answer(text, reply_markup=keyboards.get_expenses_kb())
 
     await state.set_state(BaseHandlers.BaseStates.IN_EXPENSES)
 
