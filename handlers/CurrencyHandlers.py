@@ -6,8 +6,8 @@ from handlers import BaseHandlers
 import aiohttp
 import json
 
+base_url = ""
 
-base_url=""
 
 class CurrencyStates(StatesGroup):
     IN_CURRENCY = State()
@@ -22,7 +22,6 @@ def register_currency_handlers(dp, new_base_url):
     dp.message.register(currency_handler, F.text == "валюты")
     dp.message.register(get_pare_start, F.text == "запросить пару", CurrencyStates.IN_CURRENCY)
     dp.message.register(get_pare_name, CurrencyStates.WAITING_PARE_NAME)
-    dp.message.register(get_analysis, F.text == "отчет", CurrencyStates.IN_CURRENCY)
     dp.message.register(tracked_pares_handler, F.text == "отслеживаемое", CurrencyStates.IN_CURRENCY)
     dp.message.register(add_new_tracked_pare_start, F.text == "добавить", CurrencyStates.IN_TRACKED_PARES_LIST)
     dp.message.register(add_new_tracked_pare_name, CurrencyStates.WAITING_NEW_TRACKED_PARE_NAME)
@@ -64,57 +63,6 @@ async def get_pare_name(message: types.Message, state: FSMContext):
                 else:
                     text = "Произошла ошибка, проверьте название пары"
         except Exception as e:
-            text = "Произошла ошибка подключения, попробуйте позже"
-
-    await message.answer(text, reply_markup=keyboards.get_currency_kb())
-    await state.set_state(CurrencyStates.IN_CURRENCY)
-
-
-async def get_analysis(message: types.Message, state: FSMContext):
-    user_id = message.from_user.id
-    request_url = base_url + "currency-pair"
-    params = {
-        "userId": user_id
-    }
-
-    text = "Ваш отчет:\n"
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(request_url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-
-                    for index in range(len(data)):
-                        request_url = base_url + "currency-pair/rate"
-                        params = {
-                            "Cur1": data[index]["currency1"],
-                            "Cur2": data[index]["currency2"]
-                        }
-
-                        async with aiohttp.ClientSession() as session:
-                            try:
-                                async with session.get(request_url, params=params) as response:
-                                    if response.status == 200:
-                                        rate_data = await response.json()
-                                        print(rate_data)
-                                        text += str(index + 1) + ". " + data[index]["currency1"] + "|" + \
-                                                data[index]["currency2"] + "  " +str(rate_data) + "\n"
-                                    else:
-                                        text = "Произошла ошибка, попробуйте позже"
-                                        await message.answer(text, reply_markup=keyboards.get_currency_kb())
-                                        await state.set_state(CurrencyStates.IN_CURRENCY)
-                                        return
-
-                            except Exception as e:
-                                print(str(e))
-                                text = "Произошла ошибка подключения, попробуйте позже"
-                                await message.answer(text, reply_markup=keyboards.get_currency_kb())
-                                await state.set_state(CurrencyStates.IN_CURRENCY)
-                                return
-                else:
-                    text = "Произошла ошибка, попробуйте позже"
-        except Exception as e:
-            print(str(e))
             text = "Произошла ошибка подключения, попробуйте позже"
 
     await message.answer(text, reply_markup=keyboards.get_currency_kb())
