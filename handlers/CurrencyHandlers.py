@@ -169,7 +169,7 @@ async def add_new_tracked_pare_name(message: types.Message, state: FSMContext):
     }
 
     text = ""
-    
+
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
@@ -212,6 +212,26 @@ async def add_new_tracked_pare_name(message: types.Message, state: FSMContext):
 
 
 async def delete_tracked_pare_start(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    request_url = base_url + "currency-pair"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if len(data) == 0:
+                        await message.answer("Список пар пуст")
+                        return
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
     await show_tracked_pares(message)
     await message.answer("Введите номер удаляемой пары: ", reply_markup=keyboards.get_back_kb())
     await state.set_state(CurrencyStates.WAITING_TRACKED_PARE_DELETE_NUMBER)
@@ -222,7 +242,53 @@ async def delete_tracked_pare_number(message: types.Message, state: FSMContext):
         await state.clear()
         return
 
-    # получение номера пары и удаление
+    if not message.text.isdigit():
+        await message.answer("Пожалуйста, введите номер!")
+        return
+
+    user_id = message.from_user.id
+    pare_index = int(message.text) - 1
+
+    request_url = base_url + "currency-pair"
+    params = {
+        "userId": user_id
+    }
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                else:
+                    await message.answer("Произошла ошибка, попробуйте позже")
+                    return
+        except Exception as e:
+            await message.answer("Произошла ошибка подключения, попробуйте позже")
+            return
+    if 0 <= pare_index < len(data):
+        request_url = base_url + "currency-pair"
+        params = {
+            "userId": user_id
+        }
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "cur1": data[pare_index]["currency1"],
+            "cur2": data[pare_index]["currency2"]
+        }
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.delete(request_url, params=params, json=payload, headers=headers) as response:
+                    if response.status == 200:
+                        pass
+                    else:
+                        await message.answer("Произошла ошибка, попробуйте позже")
+                        return
+            except Exception as e:
+                await message.answer("Произошла ошибка подключения, попробуйте позже")
+                return
+    else:
+        await message.answer("Введите корректный номер для удаления")
+        return
 
     await message.answer("Пара удалена", reply_markup=keyboards.get_tracked_pares_kb())
     await state.set_state(CurrencyStates.IN_TRACKED_PARES_LIST)
