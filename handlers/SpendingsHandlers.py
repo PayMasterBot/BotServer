@@ -145,13 +145,14 @@ async def compare_analysis(message: types.Message, state: FSMContext):
         "userId": user_id
     }
 
-    text = "Вот ваш сравнительный отчет "
+    text = "Вот ваш сравнительный отчет:\n"
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    text += str(data)
+                    for title in data.keys():
+                        text += title + ": " + str(data[title]['prev_month']) + " рублей | " + str(data[title]['cur_month']) + " рублей" + "\n"
                 else:
                     text = "Произошла ошибка, попробуйте позже"
         except Exception as e:
@@ -167,16 +168,18 @@ async def monthly_analysis(message: types.Message, state: FSMContext):
         "userId": user_id
     }
 
-    text = "Вот ваш отчет за месяц "
+    text = "Вот ваш отчет за месяц:\n"
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    text += str(data)
+                    for title in data.keys():
+                        text += title + ": " + str(data[title]['cur_month']) + " рублей" + "\n"
                 else:
                     text = "Произошла ошибка, попробуйте позже"
         except Exception as e:
+            print(str(e))
             text = "Произошла ошибка создания отчета, попробуйте позже"
 
     await message.answer(text, reply_markup=keyboards.get_spendings_analytics_kb())
