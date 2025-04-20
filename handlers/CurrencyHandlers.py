@@ -172,7 +172,7 @@ async def delete_tracked_pare_start(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     data = await response.json()
                     if len(data) == 0:
-                        await message.answer("Список пар пуст")
+                        await message.answer("Список отслеживаемых пар пуст")
                         return
                 else:
                     await message.answer("Произошла ошибка, попробуйте позже")
