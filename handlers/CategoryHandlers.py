@@ -38,7 +38,6 @@ async def show_category(message: types.Message):
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    print(data)
                     titles = [category["title"] for category in data]
                     for i in range(len(titles)):
                         text += str(i + 1) + ". " + titles[i] + "\n"
@@ -96,7 +95,7 @@ async def add_category_name(message: types.Message, state: FSMContext):
     headers = {"Content-Type": "application/json"}
     payload = {
         "id": 0,
-        "title": str(category_title)
+        "title": category_title
     }
 
     text = ""
@@ -107,7 +106,7 @@ async def add_category_name(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     text = "Категория была добавлена!"
                 else:
-                    print(response.status, request_url, params, payload)
+                    print(response.status)
                     text = "Произошла ошибка добавления, попробуйте позже"
         except Exception as e:
             print(str(e))
