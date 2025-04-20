@@ -98,7 +98,7 @@ async def show_tracked_pares(message: types.Message):
 
 
 async def add_new_tracked_pare_start(message: types.Message, state: FSMContext):
-    await message.answer("Введите название новой пары через проблем: ", reply_markup=keyboards.get_back_kb())
+    await message.answer("Введите название новой пары через пробел: ", reply_markup=keyboards.get_back_kb())
     await state.set_state(CurrencyStates.WAITING_NEW_TRACKED_PARE_NAME)
 
 

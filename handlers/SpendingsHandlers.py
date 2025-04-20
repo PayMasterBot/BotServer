@@ -34,27 +34,29 @@ async def new_spending_start(message: types.Message, state: FSMContext):
         "userId": user_id
     }
 
-    text = ""
+    text = "Ваши категории:\n"
+    data = None
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
                     titles = [category["title"] for category in data]
-                    text = "Ваши категории:\n" + "\n".join(
-                        f"{i + 1}. {titles[i]}"
-                        for i in range(0, len(titles))
-                    ) if titles else "У вас пока нет категорий."
+                    for i in range(len(titles)):
+                        text += str(i + 1) + ". " + titles[i] + "\n"
                     if titles:
                         text += "\nВведите порядковый номер категории"
                 else:
-                    text = "Произошла ошибка, попробуйте позже"
+                    text = "Произошла ошибка, или у вас пока нет категорий"
+                    await message.answer(text, reply_markup=keyboards.get_expenses_kb())
+                    return
         except Exception as e:
             text = "Произошла ошибка подключения, попробуйте позже"
 
     await message.answer(text, reply_markup=keyboards.get_back_kb())
     await state.set_state(SpendingsStates.WAITING_SPENDING_CATEGORY)
-    await state.update_data(custom_data=data)
+    if data:
+        await state.update_data(custom_data=data)
 
 
 async def new_spending_category(message: types.Message, state: FSMContext):
