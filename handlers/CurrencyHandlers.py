@@ -87,7 +87,8 @@ async def show_tracked_pares(message: types.Message):
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-                    print(data)
+                    if len(data) == 0:
+                        text = "Список отслеживаемых пар пуст"
                     for index in range(len(data)):
                         text += str(index + 1) + ". " + data[index]["currency1"] + "|" + data[index]["currency2"] + "\n"
                 else:
