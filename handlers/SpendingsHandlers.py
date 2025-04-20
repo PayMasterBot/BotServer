@@ -41,6 +41,10 @@ async def new_spending_start(message: types.Message, state: FSMContext):
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
+                    if len(data) == 0:
+                        text = "У вас пока нет категорий"
+                        await message.answer(text, reply_markup=keyboards.get_expenses_kb())
+                        return
                     titles = [category["title"] for category in data]
                     for i in range(len(titles)):
                         text += str(i + 1) + ". " + titles[i] + "\n"
@@ -155,11 +159,13 @@ async def compare_analysis(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     data = await response.json()
                     text += "\nКатегории:\n"
+                    if len(data) == 0:
+                        text += "Нет информации по категориям"
                     for title in data.keys():
                         text += title + ": " + str(data[title]['prev_month']) + " рублей | " + str(
                             data[title]['cur_month']) + " рублей" + "\n"
                 else:
-                    text = "Произошла ошибка, попробуйте позже"
+                    text = "Произошла ошибка, возможно вы не добавили информацию о тратах"
         except Exception as e:
             text = "Произошла ошибка создания отчета, попробуйте позже"
 
@@ -174,16 +180,19 @@ async def monthly_analysis(message: types.Message, state: FSMContext):
     }
 
     text = "Вот ваш отчет за месяц:\n"
+    null_info_count = 0
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
                     text += "\nКатегории:\n"
+                    if len(data) == 0:
+                        text += "Нет информации по категориям\n"
                     for title in data.keys():
                         text += title + ": " + str(data[title]['cur_month']) + " рублей" + "\n"
                 else:
-                    text = "Произошла ошибка, попробуйте позже"
+                    null_info_count += 1
         except Exception as e:
             print(str(e))
             text = "Произошла ошибка создания отчета, попробуйте позже"
@@ -199,11 +208,17 @@ async def monthly_analysis(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     text += "\nПодписки:\n"
                     data = await response.json()
-                    for index in range(len(data)):
-                        text += data[index]["title"] + " " + str(data[index]["price"]) + " рублей" + "\n"
+                    if len(data) == 0:
+                        text += "Нет информации по подпискам\n"
+                    else:
+                        for index in range(len(data)):
+                            text += data[index]["title"] + " " + str(data[index]["price"]) + " рублей" + "\n"
                 else:
-                    text = "Произошла ошибка, попробуйте позже"
+                    null_info_count += 1
         except Exception as e:
             text = "Произошла ошибка создания отчета, попробуйте позже"
+
+    if null_info_count == 2:
+        text = "Вы не добавили информацию о тратах"
 
     await message.answer(text, reply_markup=keyboards.get_spendings_analytics_kb())
