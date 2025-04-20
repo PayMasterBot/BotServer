@@ -5,7 +5,8 @@ from keyboards import keyboards
 import aiohttp
 import json
 
-base_url=""
+base_url = ""
+
 
 class SubscriptionStates(StatesGroup):
     IN_SUBSCRIPTIONS = State()
@@ -42,7 +43,7 @@ async def show_subscriptions(message: types.Message):
                     text = "Ваши подписки:\n" + "\n".join(
                         f"{i + 1}. {titles[i]}"
                         for i in range(0, len(titles))
-                    ) if titles else "У вас пока нет подписок."
+                    ) if titles else "У вас нет подписок"
                 else:
                     text = "Произошла ошибка, попробуйте позже"
         except Exception as e:
