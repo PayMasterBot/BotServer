@@ -6,7 +6,8 @@ import aiohttp
 import json
 from keyboards import keyboards
 
-base_url=""
+base_url = ""
+
 
 class CategoryStates(StatesGroup):
     IN_CATEGORY = State()
@@ -28,22 +29,21 @@ async def show_category(message: types.Message):
     user_id = message.from_user.id
     request_url = base_url + "category"
     params = {
-        "userId": user_id  # Замените на реальный ID пользователя
+        "userId": user_id
     }
 
-    text = ""
+    text = "Ваши категории:\n"
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(request_url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
+                    print(data)
                     titles = [category["title"] for category in data]
-                    text = "Ваши категории:\n" + "\n".join(
-                        f"{i + 1}. {titles[i]}"
-                        for i in range(0, len(titles))
-                    ) if titles else "У вас пока нет категорий."
+                    for i in range(len(titles)):
+                        text += str(i + 1) + ". " + titles[i] + "\n"
                 else:
-                    text = "Произошла ошибка, попробуйте позже"
+                    text = "Произошла ошибка, или у вас пока нет категорий"
         except Exception as e:
             text = "Произошла ошибка подключения, попробуйте позже"
 
@@ -56,7 +56,7 @@ async def category_handler(message: types.Message, state: FSMContext):
 
 
 async def add_category_start(message: types.Message, state: FSMContext):
-    await message.answer("Введите название Категории:", reply_markup=keyboards.get_back_kb())
+    await message.answer("Введите название категории:", reply_markup=keyboards.get_back_kb())
     await state.set_state(CategoryStates.WAITING_CATEGORY_NAME)
 
 
@@ -72,10 +72,31 @@ async def add_category_name(message: types.Message, state: FSMContext):
     params = {
         "userId": user_id
     }
+
+    text = "Ваши категории:\n"
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(request_url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    titles = [category["title"] for category in data]
+                    if category_title in titles:
+                        text = "Такая категория уже есть"
+                        await message.answer(text, reply_markup=keyboards.get_back_kb())
+                        return
+                else:
+                    pass
+        except Exception as e:
+            pass
+
+    request_url = base_url + "category"
+    params = {
+        "userId": user_id
+    }
     headers = {"Content-Type": "application/json"}
     payload = {
         "id": 0,
-        "title": category_title
+        "title": str(category_title)
     }
 
     text = ""
@@ -86,6 +107,7 @@ async def add_category_name(message: types.Message, state: FSMContext):
                 if response.status == 200:
                     text = "Категория была добавлена!"
                 else:
+                    print(response.status, request_url, params, payload)
                     text = "Произошла ошибка добавления, попробуйте позже"
         except Exception as e:
             print(str(e))
@@ -120,7 +142,6 @@ async def delete_category_start(message: types.Message, state: FSMContext):
         except Exception as e:
             await message.answer("Произошла ошибка подключения, попробуйте позже")
             return
-
 
     await show_category(message)
     await message.answer("Введите номер категории для удаления:", reply_markup=keyboards.get_back_kb())
